@@ -64,7 +64,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
     if (data.success) {
       showPopup("Success ✅", "Login successful! Redirecting...");
-      localStorage.setItem("token", data.token); // store JWT
+      localStorage.setItem("token", data.token); // JWT token
       localStorage.setItem("username", data.user.username);
       localStorage.setItem("email", data.user.email);
       setTimeout(() => window.location.href = "dashboard.html", 1500);
