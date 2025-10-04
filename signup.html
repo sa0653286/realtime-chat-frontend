@@ -1,1 +1,92 @@
-fhjj
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatFlow - Sign Up</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#c7d2d7] flex items-center justify-center min-h-screen">
+
+<div class="bg-[#e5e6e4] shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
+  <h2 class="text-3xl font-bold text-[#6c6b6b] mb-6">Create Account</h2>
+  
+  <input id="signup-username" type="text" placeholder="Username" 
+         class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
+  
+  <input id="signup-email" type="email" placeholder="Email" 
+         class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
+  
+  <input id="signup-password" type="password" placeholder="Password" 
+         class="w-full px-4 py-2 mb-6 rounded-lg border border-[#c7d2d7]" />
+  
+  <button id="signupBtn" 
+          class="w-full bg-[#6c6b6b] text-white py-3 rounded-lg hover:bg-[#4a4a4a]">
+    Sign Up
+  </button>
+
+  <p class="mt-4 text-sm text-[#6c6b6b]">
+    Already have an account? <a href="login.html" class="underline">Login</a>
+  </p>
+</div>
+
+<!-- Popup -->
+<div id="popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-[#e5e6e4] p-6 rounded-2xl w-80 shadow-lg animate-fadeIn text-center">
+    <h2 id="popup-title" class="text-[#6c6b6b] font-bold text-lg mb-2"></h2>
+    <p id="popup-msg" class="text-[#6c6b6b] text-sm"></p>
+  </div>
+</div>
+
+<script>
+tailwind.config = {
+  theme: { extend: {
+    keyframes: { fadeIn:{'0%':{opacity:0},'100%':{opacity:1}} },
+    animation: { fadeIn:'fadeIn 0.3s ease-in-out' }
+  } }
+}
+
+const backend = "https://chatflow-backend-574t.onrender.com";
+
+document.getElementById("signupBtn").addEventListener("click", async () => {
+  const username = document.getElementById("signup-username").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value.trim();
+
+  if (!username || !email || !password) {
+    showPopup("Error ❌", "Please fill all fields");
+    return;
+  }
+
+  try {
+    const res = await fetch(`${backend}/signup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showPopup("Success ✅", "Account created! Redirecting to login...");
+      setTimeout(() => window.location.href = "login.html", 1500);
+    } else {
+      showPopup("Error ❌", data.message || "Signup failed");
+    }
+
+  } catch (err) {
+    showPopup("Error ❌", "Server error, try later.");
+  }
+});
+
+function showPopup(title, msg) {
+  document.getElementById("popup-title").textContent = title;
+  document.getElementById("popup-msg").textContent = msg;
+  document.getElementById("popup").classList.remove("hidden");
+  setTimeout(() => {
+    document.getElementById("popup").classList.add("hidden");
+  }, 2000);
+}
+</script>
+
+</body>
+</html>
