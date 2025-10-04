@@ -1,176 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Realtime Chat WhatsApp Style</title>
-<style>
-  body {
-    font-family: 'Arial', sans-serif;
-    background: #ece5dd;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-  }
-
-  #chat {
-    width: 100%;
-    max-width: 400px;
-    height: 90vh;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-
-  #header {
-    background: #075e54;
-    color: white;
-    padding: 15px;
-    font-size: 18px;
-    text-align: center;
-  }
-
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .msg {
-    max-width: 70%;
-    margin: 5px 0;
-    padding: 8px 12px;
-    border-radius: 20px;
-    word-wrap: break-word;
-    position: relative;
-  }
-
-  .msg.self {
-    background: #dcf8c6;
-    align-self: flex-end;
-    border-bottom-right-radius: 5px;
-  }
-
-  .msg.other {
-    background: #fff;
-    align-self: flex-start;
-    border-bottom-left-radius: 5px;
-    border: 1px solid #ddd;
-  }
-
-  .msg .user {
-    font-weight: bold;
-    font-size: 12px;
-    margin-bottom: 2px;
-  }
-
-  .msg .time {
-    font-size: 10px;
-    color: #555;
-    text-align: right;
-    margin-top: 2px;
-  }
-
-  #input-area {
-    display: flex;
-    padding: 10px;
-    background: #f0f0f0;
-  }
-
-  #message {
-    flex: 1;
-    padding: 10px;
-    border-radius: 20px;
-    border: 1px solid #ccc;
-    outline: none;
-  }
-
-  button {
-    margin-left: 10px;
-    padding: 10px 15px;
-    background: #075e54;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    font-weight: bold;
-  }
-
-  /* Scrollbar styling */
-  #messages::-webkit-scrollbar {
-    width: 6px;
-  }
-  #messages::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.2);
-    border-radius: 3px;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatFlow - Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-[#c7d2d7] flex items-center justify-center min-h-screen">
+  <div class="bg-[#e5e6e4] shadow-2xl rounded-2xl p-10 w-full max-w-md text-center">
+    <h1 class="text-4xl font-bold text-[#6c6b6b] mb-3">ChatFlow</h1>
+    <p class="text-[#6c6b6b] text-sm mb-8">Stay connected, anytime, anywhere</p>
 
-<div id="chat">
-  <div id="header">Realtime Chat 🚀</div>
-  <div id="messages"></div>
-  <div id="input-area">
-    <input id="message" placeholder="Type a message..." autocomplete="off"/>
-    <button onclick="sendMessage()">➤</button>
+    <a href="login.html"
+       class="block bg-[#6c6b6b] text-white py-3 rounded-xl font-semibold hover:bg-[#4a4a4a] transition mb-4">
+      Login
+    </a>
+
+    <a href="signup.html"
+       class="block bg-[#dfd9c7] text-[#6c6b6b] py-3 rounded-xl font-semibold hover:bg-[#c7c0ad] transition">
+      Sign Up
+    </a>
+
+    <p class="mt-8 text-xs text-[#6c6b6b]">© 2025 ChatFlow</p>
   </div>
-</div>
-
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script>
-  const username = prompt("Enter your name") || "Anonymous";
-  const socket = io("https://realtime-chat-backend-9lyb.onrender.com");
-
-  const messagesDiv = document.getElementById("messages");
-  const input = document.getElementById("message");
-
-  function formatTime(date) {
-    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  }
-
-  socket.on("receive_message", (data) => {
-    const div = document.createElement("div");
-    div.className = "msg " + (data.user === username ? "self" : "other");
-    
-    div.innerHTML = `<div class="user">${data.user}</div>
-                     <div class="text">${data.message}</div>
-                     <div class="time">${formatTime(new Date())}</div>`;
-    
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  });
-
-  function sendMessage() {
-    const text = input.value;
-    if(text.trim() !== "") {
-      const messageData = { user: username, message: text };
-      socket.emit("send_message", messageData);
-
-      // Show message immediately in own chat
-      const div = document.createElement("div");
-      div.className = "msg self";
-      div.innerHTML = `<div class="user">${username}</div>
-                       <div class="text">${text}</div>
-                       <div class="time">${formatTime(new Date())}</div>`;
-      messagesDiv.appendChild(div);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-      input.value = "";
-    }
-  }
-
-  // Send on Enter key
-  input.addEventListener("keypress", e => {
-    if(e.key === "Enter") sendMessage();
-  });
-</script>
-
 </body>
 </html>
