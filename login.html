@@ -1,59 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChatFlow - Login</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatFlow - Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#c7d2d7] flex items-center justify-center min-h-screen">
 
-  <div class="bg-[#e5e6e4] shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
-    <h2 class="text-3xl font-bold text-[#6c6b6b] mb-6">Login</h2>
-    
-    <input id="login-username" type="text" placeholder="Username" 
-           class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
-    
-    <input id="login-password" type="password" placeholder="Password" 
-           class="w-full px-4 py-2 mb-6 rounded-lg border border-[#c7d2d7]" />
-    
-    <button id="loginBtn" 
-            class="w-full bg-[#6c6b6b] text-white py-3 rounded-lg hover:bg-[#4a4a4a]">
-      Login
-    </button>
+<div class="bg-[#e5e6e4] shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
+  <h2 class="text-3xl font-bold text-[#6c6b6b] mb-6">Login</h2>
+  
+  <input id="login-email" type="email" placeholder="Email" 
+         class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
+  
+  <input id="login-password" type="password" placeholder="Password" 
+         class="w-full px-4 py-2 mb-6 rounded-lg border border-[#c7d2d7]" />
+  
+  <button id="loginBtn" 
+          class="w-full bg-[#6c6b6b] text-white py-3 rounded-lg hover:bg-[#4a4a4a]">
+    Login
+  </button>
 
-    <p class="mt-4 text-sm text-[#6c6b6b]">
-      Don’t have an account? <a href="signup.html" class="underline">Sign Up</a>
-    </p>
+  <p class="mt-4 text-sm text-[#6c6b6b]">
+    Don’t have an account? <a href="signup.html" class="underline">Sign Up</a>
+  </p>
+</div>
+
+<!-- Popup -->
+<div id="popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-[#e5e6e4] p-6 rounded-2xl w-80 shadow-lg animate-fadeIn text-center">
+    <h2 id="popup-title" class="text-[#6c6b6b] font-bold text-lg mb-2"></h2>
+    <p id="popup-msg" class="text-[#6c6b6b] text-sm"></p>
   </div>
+</div>
 
-  <script>
-    const backend = "https://chatflow-backend-574t.onrender.com";
+<script>
+tailwind.config = {
+  theme: { extend: {
+    keyframes: { fadeIn:{'0%':{opacity:0},'100%':{opacity:1}} },
+    animation: { fadeIn:'fadeIn 0.3s ease-in-out' }
+  } }
+}
 
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      const username = document.getElementById("login-username").value;
-      const password = document.getElementById("login-password").value;
+const backend = "https://chatflow-backend-574t.onrender.com";
 
-      if (!username || !password) return alert("Please enter both fields.");
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value.trim();
 
-      const res = await fetch(`${backend}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
+  if (!email || !password) {
+    showPopup("Error ❌", "Please fill all fields");
+    return;
+  }
 
-      const data = await res.json();
-
-      if (data.success) {
-        alert(data.message); // ✅ Show popup
-        localStorage.setItem("token", data.token); // store JWT token
-        localStorage.setItem("username", username);
-        window.location.href = "dashboard.html"; // redirect
-      } else {
-        alert(data.message); // invalid credentials
-      }
+  try {
+    const res = await fetch(`${backend}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
     });
-  </script>
+    const data = await res.json();
+
+    if (data.success) {
+      showPopup("Success ✅", "Login successful! Redirecting...");
+      localStorage.setItem("token", data.token); // store JWT
+      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("email", data.user.email);
+      setTimeout(() => window.location.href = "dashboard.html", 1500);
+    } else {
+      showPopup("Error ❌", data.message || "Invalid credentials");
+    }
+
+  } catch (err) {
+    showPopup("Error ❌", "Server error, try later.");
+  }
+});
+
+function showPopup(title, msg) {
+  document.getElementById("popup-title").textContent = title;
+  document.getElementById("popup-msg").textContent = msg;
+  document.getElementById("popup").classList.remove("hidden");
+  setTimeout(() => {
+    document.getElementById("popup").classList.add("hidden");
+  }, 2000);
+}
+</script>
 
 </body>
 </html>
