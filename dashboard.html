@@ -7,147 +7,142 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
-<body class="bg-[#c7d2d7] min-h-screen flex flex-col">
+<body class="bg-[#c7d2d7] min-h-screen flex">
 
-<!-- Header -->
-<header class="bg-[#e5e6e4] p-4 shadow-md flex justify-between items-center">
-  <h1 class="text-[#6c6b6b] text-2xl font-bold">ChatFlow</h1>
-  <button onclick="logout()" class="bg-[#6c6b6b] text-white px-3 py-1 rounded hover:bg-[#4a4a4a]">Logout</button>
-</header>
+<!-- Sidebar for Contacts -->
+<div class="w-2/5 max-w-xs bg-[#e5e6e4] shadow-lg flex flex-col">
+  <div class="p-4 border-b border-[#dfd9c7] flex justify-between items-center">
+    <h2 class="text-[#6c6b6b] font-bold text-xl">Contacts</h2>
+    <button id="addContactBtn" class="bg-[#dfd9c7] hover:bg-[#c7c0ad] px-2 py-1 rounded">+</button>
+  </div>
+  <div id="contacts" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+</div>
 
-<div class="flex flex-1 overflow-hidden">
-
-  <!-- Contacts List -->
-  <aside class="bg-[#dfd9c7] w-64 p-4 overflow-y-auto">
-    <h2 class="text-[#6c6b6b] font-bold mb-4">Contacts</h2>
-    <ul id="contact-list" class="space-y-2"></ul>
-
-    <button onclick="showAddContactPopup()" class="mt-4 w-full bg-[#6c6b6b] text-white py-2 rounded hover:bg-[#4a4a4a]">
-      + Add Contact
-    </button>
-  </aside>
-
-  <!-- Chat Section -->
-  <main class="flex-1 bg-[#e5e6e4] flex flex-col p-4">
-    <div id="chat-header" class="text-[#6c6b6b] font-bold mb-2">Select a contact to start chat</div>
-    <div id="chat-messages" class="flex-1 overflow-y-auto border border-[#c7d2d7] p-2 rounded mb-2"></div>
-    <div class="flex">
-      <input id="chat-input" placeholder="Type a message..." class="flex-1 p-2 border border-[#c7d2d7] rounded" />
-      <button onclick="sendMessage()" class="ml-2 bg-[#6c6b6b] text-white px-4 py-2 rounded hover:bg-[#4a4a4a]">Send</button>
-    </div>
-  </main>
+<!-- Chat Panel -->
+<div class="flex-1 flex flex-col">
+  <div class="bg-[#e5e6e4] p-4 border-b border-[#dfd9c7]">
+    <h2 id="chatWith" class="text-[#6c6b6b] font-bold text-lg">Select a contact</h2>
+  </div>
+  <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-2"></div>
+  <div class="p-4 bg-[#dfd9c7] flex gap-2">
+    <input id="chatInput" type="text" placeholder="Type a message..." 
+           class="flex-1 px-4 py-2 rounded-lg border border-[#c7d2d7]" />
+    <button id="sendBtn" class="bg-[#6c6b6b] text-white px-4 py-2 rounded-lg hover:bg-[#4a4a4a]">Send</button>
+  </div>
 </div>
 
 <!-- Add Contact Popup -->
-<div id="addContactPopup" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-  <div class="bg-[#e5e6e4] p-6 rounded-2xl shadow-lg w-80 text-center">
-    <h2 class="text-[#6c6b6b] font-bold mb-2">Add Contact</h2>
-    <input id="contact-name" placeholder="Contact Name" class="w-full mb-2 p-2 border border-[#c7d2d7] rounded"/>
-    <input id="contact-email" placeholder="Email" class="w-full mb-4 p-2 border border-[#c7d2d7] rounded"/>
-    <button onclick="addContact()" class="bg-[#6c6b6b] text-white px-4 py-2 rounded hover:bg-[#4a4a4a]">Add</button>
+<div id="contactPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-[#dfd9c7] p-6 rounded-2xl w-80 shadow-lg animate-fadeIn text-center">
+    <h2 class="text-[#6c6b6b] font-bold text-lg mb-2">Add Contact</h2>
+    <input id="contactName" type="text" placeholder="Contact Email" 
+           class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
+    <button id="saveContactBtn" class="w-full bg-[#6c6b6b] text-white py-2 rounded-lg hover:bg-[#4a4a4a]">Save</button>
   </div>
 </div>
 
 <script>
+tailwind.config = {
+  theme: { extend: {
+    keyframes: { fadeIn:{'0%':{opacity:0},'100%':{opacity:1}} },
+    animation: { fadeIn:'fadeIn 0.3s ease-in-out' }
+  } }
+}
+
+// ------------------ Socket.IO ------------------
 const socket = io("https://chatflow-backend-574t.onrender.com");
 
+// Get logged-in user
+const currentUser = localStorage.getItem("email");
+if(!currentUser) window.location.href = "login.html";
+
 let selectedContact = null;
-const username = localStorage.getItem("username");
-const email = localStorage.getItem("email");
 
-// Ensure logged-in
-if(!username){ window.location.href = "login.html"; }
+// ------------------ Contacts ------------------
+const contactsDiv = document.getElementById("contacts");
+const addContactBtn = document.getElementById("addContactBtn");
+const contactPopup = document.getElementById("contactPopup");
+const saveContactBtn = document.getElementById("saveContactBtn");
+const contactNameInput = document.getElementById("contactName");
 
-// Load contacts from localStorage
-function loadContacts(){
-  const contacts = JSON.parse(localStorage.getItem(`${email}-contacts`)) || [];
-  const list = document.getElementById("contact-list");
-  list.innerHTML = "";
-  contacts.forEach(c => {
-    const li = document.createElement("li");
-    li.textContent = c.name;
-    li.className = "cursor-pointer p-2 rounded hover:bg-[#e5e6e4]";
-    li.onclick = () => selectContact(c);
-    list.appendChild(li);
+let contacts = JSON.parse(localStorage.getItem(`contacts_${currentUser}`)) || [];
+
+function renderContacts() {
+  contactsDiv.innerHTML = "";
+  contacts.forEach(contact => {
+    const div = document.createElement("div");
+    div.textContent = contact;
+    div.className = "p-2 bg-[#dfd9c7] rounded cursor-pointer hover:bg-[#c7c0ad]";
+    div.onclick = () => selectContact(contact);
+    contactsDiv.appendChild(div);
   });
 }
-loadContacts();
+renderContacts();
+
+addContactBtn.onclick = () => contactPopup.classList.remove("hidden");
+saveContactBtn.onclick = () => {
+  const contact = contactNameInput.value.trim();
+  if(contact && !contacts.includes(contact)){
+    contacts.push(contact);
+    localStorage.setItem(`contacts_${currentUser}`, JSON.stringify(contacts));
+    renderContacts();
+    contactNameInput.value = "";
+    contactPopup.classList.add("hidden");
+  }
+};
+
+// ------------------ Chat ------------------
+const chatMessages = document.getElementById("chatMessages");
+const chatWithTitle = document.getElementById("chatWith");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+
+let chats = JSON.parse(localStorage.getItem(`chats_${currentUser}`)) || {};
 
 function selectContact(contact){
   selectedContact = contact;
-  document.getElementById("chat-header").textContent = `Chat with ${contact.name}`;
-  loadChat(contact.email);
+  chatWithTitle.textContent = contact;
+  renderChat();
 }
 
-// Load chat messages
-function loadChat(contactEmail){
-  const chat = JSON.parse(localStorage.getItem(`${email}-chat-${contactEmail}`)) || [];
-  const chatDiv = document.getElementById("chat-messages");
-  chatDiv.innerHTML = "";
-  chat.forEach(msg => {
+function renderChat(){
+  chatMessages.innerHTML = "";
+  if(!selectedContact) return;
+  const msgs = chats[selectedContact] || [];
+  msgs.forEach(msg => {
     const div = document.createElement("div");
-    div.className = "p-1 my-1 rounded " + (msg.from === username ? "bg-[#6c6b6b] text-white text-right" : "bg-[#dfd9c7] text-[#6c6b6b] text-left");
-    div.textContent = msg.from + ": " + msg.text;
-    chatDiv.appendChild(div);
+    div.textContent = `${msg.from}: ${msg.text}`;
+    div.className = `p-2 rounded ${msg.from===currentUser?"bg-[#6c6b6b] text-white":"bg-[#e5e6e4] text-[#6c6b6b]"}`;
+    chatMessages.appendChild(div);
   });
-  chatDiv.scrollTop = chatDiv.scrollHeight;
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // Send message
-function sendMessage(){
-  if(!selectedContact) return alert("Select a contact first");
-  const input = document.getElementById("chat-input");
-  const text = input.value.trim();
-  if(!text) return;
-  
-  const msgObj = {from: username, to: selectedContact.email, text};
-  saveMessage(msgObj);
-  socket.emit("send_message", msgObj);
-  input.value = "";
-}
+sendBtn.onclick = () => {
+  if(!selectedContact || !chatInput.value.trim()) return;
+  const message = chatInput.value.trim();
 
+  // Save locally
+  if(!chats[selectedContact]) chats[selectedContact] = [];
+  chats[selectedContact].push({from: currentUser, text: message});
+  localStorage.setItem(`chats_${currentUser}`, JSON.stringify(chats));
+  renderChat();
+
+  // Send via Socket.IO
+  socket.emit("send_message", {from: currentUser, to: selectedContact, text: message});
+  chatInput.value = "";
+};
+
+// Receive message
 socket.on("receive_message", (data) => {
-  if(data.to === email || data.from === username){
-    saveMessage(data);
+  if(data.to === currentUser){
+    if(!chats[data.from]) chats[data.from] = [];
+    chats[data.from].push({from: data.from, text: data.text});
+    localStorage.setItem(`chats_${currentUser}`, JSON.stringify(chats));
+    if(selectedContact===data.from) renderChat();
   }
 });
-
-function saveMessage(msg){
-  const key = `${email}-chat-${msg.from === username ? msg.to : msg.from}`;
-  const chat = JSON.parse(localStorage.getItem(key)) || [];
-  chat.push(msg);
-  localStorage.setItem(key, JSON.stringify(chat));
-  if(selectedContact && (msg.from === selectedContact.email || msg.to === selectedContact.email)){
-    loadChat(selectedContact.email);
-  }
-}
-
-// Add contact
-function showAddContactPopup(){ document.getElementById("addContactPopup").classList.remove("hidden"); }
-function addContact(){
-  const name = document.getElementById("contact-name").value.trim();
-  const contactEmail = document.getElementById("contact-email").value.trim();
-  if(!name || !contactEmail) return alert("Fill all fields");
-  
-  const contacts = JSON.parse(localStorage.getItem(`${email}-contacts`)) || [];
-  if(contacts.some(c => c.email === contactEmail)){
-    return alert("Contact already exists");
-  }
-  contacts.push({name, email: contactEmail});
-  localStorage.setItem(`${email}-contacts`, JSON.stringify(contacts));
-  loadContacts();
-  document.getElementById("addContactPopup").classList.add("hidden");
-  document.getElementById("contact-name").value = "";
-  document.getElementById("contact-email").value = "";
-}
-
-// Logout
-function logout(){
-  localStorage.removeItem("token");
-  localStorage.removeItem("username");
-  localStorage.removeItem("email");
-  window.location.href = "login.html";
-}
 </script>
 
 </body>
