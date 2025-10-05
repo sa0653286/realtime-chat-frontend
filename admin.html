@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatFlow - Admin Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#c7d2d7; font-family:Inter,sans-serif; }
+  .container { max-width:1000px; margin:auto; padding:16px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:12px; text-align:left; border-bottom:1px solid #ddd; }
+  th { background:#e5e6e4; color:#6c6b6b; font-weight:600; }
+  td { background:#fff; color:#333; }
+  button { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; }
+  .btn-delete { background:#e53e3e; color:white; }
+  .btn-view { background:#3182ce; color:white; }
+  #popup { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:50; display:none; }
+  #popup .box { background:#e5e6e4; padding:16px 24px; border-radius:16px; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 class="text-2xl font-bold mb-4 text-[#6c6b6b]">Admin Panel — ChatFlow</h1>
+
+  <input type="text" id="searchInput" placeholder="Search users..." class="mb-4 w-full p-2 rounded-lg border border-[#c7d2d7]">
+
+  <table id="usersTable">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Users will be loaded here -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Popup -->
+<div id="popup">
+  <div class="box">
+    <h2 id="popupTitle" class="font-bold text-lg mb-2"></h2>
+    <p id="popupMsg"></p>
+  </div>
+</div>
+
+<script>
+const backend = "https://chatflow-backend-574t.onrender.com";
+const token = localStorage.getItem("token"); // Admin JWT
+const usersTable = document.getElementById('usersTable').querySelector('tbody');
+const popup = document.getElementById('popup');
+const popupTitle = document.getElementById('popupTitle');
+const popupMsg = document.getElementById('popupMsg');
+
+function showPopup(title,msg){
+  popupTitle.textContent=title;
+  popupMsg.textContent=msg;
+  popup.style.display='flex';
+  setTimeout(()=>popup.style.display='none',2000);
+}
+
+// Fetch all users
+async function loadUsers(){
+  try{
+    const res = await fetch(`${backend}/admin/users`,{
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if(data.error){ showPopup("Error ❌",data.error); return; }
+    usersTable.innerHTML='';
+    data.users.forEach(user=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML=`
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>
+          <button class="btn-view" onclick="viewChats('${user.email}')">View Chats</button>
+          <button class="btn-delete" onclick="deleteUser('${user.email}')">Delete</button>
+        </td>
+      `;
+      usersTable.appendChild(tr);
+    });
+  }catch(err){ showPopup("Error ❌","Server error, try later."); }
+}
+
+// Delete user
+async function deleteUser(email){
+  if(!confirm(`Delete user ${email}?`)) return;
+  try{
+    const res = await fetch(`${backend}/admin/delete-user`,{
+      method:"POST",
+      headers: { "Content-Type":"application/json","Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if(data.success){ showPopup("Success ✅","User deleted."); loadUsers(); }
+    else showPopup("Error ❌", data.error||"Failed to delete user.");
+  }catch(err){ showPopup("Error ❌","Server error."); }
+}
+
+// View chats (read-only)
+function viewChats(email){
+  const chats = JSON.parse(localStorage.getItem('chatflow_chats_'+email)||'{}');
+  let allMsgs='';
+  Object.keys(chats).forEach(key=>{
+    chats[key].forEach(msg=>{
+      allMsgs+=`${msg.from}: ${msg.text}\n`;
+    });
+  });
+  alert(`Chat history of ${email}:\n\n`+allMsgs||"No messages");
+}
+
+// Search users
+document.getElementById('searchInput').addEventListener('input',(e)=>{
+  const query = e.target.value.toLowerCase();
+  Array.from(usersTable.rows).forEach(row=>{
+    const name=row.cells[0].textContent.toLowerCase();
+    const email=row.cells[1].textContent.toLowerCase();
+    row.style.display = (name.includes(query)||email.includes(query)) ? '' : 'none';
+  });
+});
+
+// Initial load
+loadUsers();
+</script>
+
+</body>
+</html>
