@@ -5,68 +5,106 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ChatFlow - Login</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+body {
+  background: #0d1117;
+  color: white;
+  font-family: Poppins, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.form-container {
+  background: #161b22;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+}
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: none;
+  background: #21262d;
+  color: white;
+}
+button {
+  background: #238636;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+}
+button:hover { background: #2ea043; }
+#popup {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #ff5050;
+}
+</style>
 </head>
-<body class="bg-[#c7d2d7] flex items-center justify-center min-h-screen">
+<body>
 
-<div class="bg-[#e5e6e4] shadow-xl rounded-2xl p-8 w-full max-w-md text-center">
-  <h2 class="text-3xl font-bold text-[#6c6b6b] mb-6">Login</h2>
-  
-  <input id="login-email" type="email" placeholder="Email" class="w-full px-4 py-2 mb-4 rounded-lg border border-[#c7d2d7]" />
-  <input id="login-password" type="password" placeholder="Password" class="w-full px-4 py-2 mb-6 rounded-lg border border-[#c7d2d7]" />
-  
-  <button id="loginBtn" class="w-full bg-[#6c6b6b] text-white py-3 rounded-lg hover:bg-[#4a4a4a]">Login</button>
-
-  <p class="mt-4 text-sm text-[#6c6b6b]">
-    Don’t have an account? <a href="signup.html" class="underline">Sign Up</a>
+<div class="form-container">
+  <h2 class="text-2xl font-bold mb-3">Welcome Back 👋</h2>
+  <input type="email" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button id="loginBtn">Login</button>
+  <p class="mt-2 text-sm">Don’t have an account? 
+    <a href="signup.html" class="text-green-400 underline">Sign Up</a>
   </p>
-</div>
-
-<!-- Popup -->
-<div id="popup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-  <div class="bg-[#e5e6e4] p-6 rounded-2xl w-80 shadow-lg text-center">
-    <h2 id="popup-title" class="text-[#6c6b6b] font-bold text-lg mb-2"></h2>
-    <p id="popup-msg" class="text-[#6c6b6b] text-sm"></p>
-  </div>
+  <div id="popup"></div>
 </div>
 
 <script>
 const backend = "https://chatflow-backend-574t.onrender.com";
 
+function showPopup(message, success = false) {
+  const popup = document.getElementById("popup");
+  popup.style.color = success ? "#00ff7f" : "#ff5050";
+  popup.innerText = message;
+  setTimeout(() => popup.innerText = "", 2000);
+}
+
 document.getElementById("loginBtn").addEventListener("click", async () => {
-  const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("login-password").value.trim();
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
 
-  if(!email || !password){ showPopup("Error ❌", "Please fill all fields"); return; }
+  if (!email || !password) {
+    return showPopup("Please fill all fields ❌");
+  }
 
-  try{
+  try {
     const res = await fetch(`${backend}/login`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ email, password })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
     });
+
     const data = await res.json();
 
-    if(data.success){
-      showPopup("Success ✅", "Login successful! Redirecting...");
+    if (data.success) {
+      showPopup("Login successful ✅", true);
       localStorage.setItem("token", data.token);
       localStorage.setItem("username", data.user.username);
       localStorage.setItem("email", data.user.email);
-      setTimeout(()=>window.location.href="dashboard.html",1500);
-    }else{
-      showPopup("Error ❌", data.message || "Invalid credentials");
+      setTimeout(() => window.location.href = "dashboard.html", 1500);
+    } else {
+      showPopup(data.message || "Invalid email or password ❌");
     }
-  }catch(e){
-    showPopup("Error ❌", "Server error, try later.");
+
+  } catch (err) {
+    showPopup("Server error, please try again later ❌");
   }
 });
-
-function showPopup(title,msg){
-  const pTitle=document.getElementById("popup-title");
-  const pMsg=document.getElementById("popup-msg");
-  pTitle.textContent=title; pMsg.textContent=msg;
-  document.getElementById("popup").classList.remove("hidden");
-  setTimeout(()=>document.getElementById("popup").classList.add("hidden"),2000);
-}
 </script>
+
 </body>
 </html>
