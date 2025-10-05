@@ -1,12 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatFlow</title>
-<script>
-  window.location.href = "login.html";
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tracker - Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #f5f5f5; 
+        }
+        h1 { text-align: center; color: #333; }
+        #locations { 
+            max-width: 600px; 
+            margin: 0 auto 20px; 
+        }
+        .location { 
+            margin: 10px 0; 
+            padding: 15px; 
+            background-color: white; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .location strong { color: #4CAF50; }
+        #map { 
+            height: 500px; 
+            width: 100%; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+        #status { 
+            text-align: center; 
+            padding: 10px; 
+            background-color: #e3f2fd; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
+        }
+    </style>
 </head>
-<body></body>
+<body>
+    <h1>Family Tracker Dashboard</h1>
+    <div id="status">Loading...</div>
+    <div id="locations"></div>
+    <div id="map"></div>
+
+    <script>
+        // REPLACE WITH YOUR FIREBASE CONFIG (same as in tracker.html)
+        const firebaseConfig = {
+            // Paste your full config here
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        auth.signInAnonymously()
+            .then(() => {
+                document.getElementById('status').textContent = 'Connected. Waiting for location updates...';
+            })
+            .catch((error) => {
+                console.error('Auth error:', error);
+                document.getElementById('status').textContent = 'Authentication failed. Check console.';
+            });
+
+        let map;
+        const markers = {}; // Store markers by child ID
+        const knownChildren = ['child1', 'child2']; // ADD YOUR CHILD IDs HERE, e.g., ['child1', 'child2']
+
+        function initMap() {
+            // Default center (change to your area, e.g., home coordinates)
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 10,
+                center: { lat: 37.7749, lng: -122.4194 } // San Francisco example; update this
+            });
+
+            // Listen for Firebase updates
+            db.ref('locations').on('value', (snapshot) => {
+                const locationsDiv = document.getElementById('locations');
+                locationsDiv.innerHTML = '';
+
+                let hasUpdates = false;
+                snapshot.forEach((childSnapshot) => {
+                    const childId = childSnapshot.key;
+                    const data = childSnapshot.val();
+                    if (data && data.lat && data.lng) {
+                        hasUpdates = true;
+                        updateUIAndMap(childId, data);
+                    }
+                });
+
+                if (!hasUpdates) {
+                    locationsDiv.innerHTML = '<p>No locations shared yet. Ensure child devices are tracking.</p>';
+                    document.getElementById('status').textContent = 'No active tracking. Start on child devices.';
+                } else {
+                    document.getElementById('status').textContent = 'Live updates active.';
+                }
+            }, (error) => {
+                console.error('Database error:', error);
+                document.getElementById('status').textContent = 'Error loading data.';
+            });
+        }
+
+        function updateUIAndMap(childId, data) {
+            const locationsDiv = document.getElementById('locations');
+
+            // Update list
+            const locDiv = document.createElement('div');
+            locDiv.className = 'location';
+            locDiv.innerHTML = `
+                <strong>${childId}:</strong><br>
+                Lat: ${data.lat.toFixed(6)}, Lng: ${data.lng.toFixed(6)}<br>
+                Accuracy: ${data.accuracy ? data.accuracy.toFixed(0) + 'm' : 'N/A'}<br>
+                Last Updated: ${new Date(data.timestamp).toLocaleString()}
+            `;
+            locationsDiv.appendChild(locDiv);
+
+            // Update map
+            const pos = { lat: parseFloat(data.lat), lng: parseFloat(data.lng) };
+            if (markers[childId]) {
+                markers[childId].setPosition(pos);
+            } else {
+                markers[childId] = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: childId,
+                    label: childId.charAt(0).toUpperCase(),
+                    icon: {
+                        url: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png', // Green marker; customize per child
+                        scaledSize: new google.maps.Size(30, 30)
+                    }
+                });
+            }
+
+            // Pan to the latest location (or average if multiple)
+            if (Object.keys(markers).length === 1) {
+                map.panTo(pos);
+            }
+        }
+
+        // Error if Maps API fails
+        window.initMap = () => {}; // Fallback
+    </script>
+</body>
 </html>
