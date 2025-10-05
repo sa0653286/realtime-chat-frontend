@@ -1,110 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatFlow - Sign Up</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-body {
-  background: #0d1117;
-  color: white;
-  font-family: Poppins, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-.form-container {
-  background: #161b22;
-  padding: 25px;
-  border-radius: 12px;
-  text-align: center;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.6);
-}
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 6px;
-  border: none;
-  background: #21262d;
-  color: white;
-}
-button {
-  background: #238636;
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  width: 100%;
-}
-button:hover { background: #2ea043; }
-#popup {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #ff5050;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up - Realtime Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="form-container">
+    <h2>Create Account</h2>
+    <input type="text" id="signupName" placeholder="Full Name" />
+    <input type="email" id="signupEmail" placeholder="Email" />
+    <input type="password" id="signupPassword" placeholder="Password" />
+    <button onclick="signUp()">Sign Up</button>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
 
-<div class="form-container">
-  <h2 class="text-2xl font-bold mb-3">Create Account</h2>
-  <input type="text" id="signupUsername" placeholder="Username">
-  <input type="email" id="signupEmail" placeholder="Email">
-  <input type="password" id="signupPassword" placeholder="Password">
-  <button id="signupBtn">Sign Up</button>
-  <p class="mt-2 text-sm">Already have an account? 
-    <a href="login.html" class="text-green-400 underline">Login</a>
-  </p>
-  <div id="popup"></div>
-</div>
-
-<script>
-const backend = "https://chatflow-backend-574t.onrender.com";
-
-function showPopup(message, success = false) {
-  const popup = document.getElementById("popup");
-  popup.style.color = success ? "#00ff7f" : "#ff5050";
-  popup.innerText = message;
-  setTimeout(() => popup.innerText = "", 2000);
-}
-
-document.getElementById("signupBtn").addEventListener("click", async () => {
-  const username = document.getElementById("signupUsername").value.trim();
-  const email = document.getElementById("signupEmail").value.trim();
-  const password = document.getElementById("signupPassword").value.trim();
-
-  if (!username || !email || !password) {
-    return showPopup("Please fill all fields ❌");
-  }
-
-  try {
-    const res = await fetch(`${backend}/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password })
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      showPopup("Account created successfully ✅", true);
-      setTimeout(() => window.location.href = "login.html", 1500);
-    } else {
-      showPopup(data.message || "Signup failed ❌");
-    }
-
-  } catch (err) {
-    showPopup("Server error, please try again later ❌");
-  }
-});
-</script>
-
+  <script type="module" src="main.js"></script>
 </body>
 </html>
-
