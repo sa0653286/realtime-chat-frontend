@@ -1,0 +1,6 @@
+body{background:#c7d2d7;font-family:Inter,sans-serif;margin:0;padding:0;}
+.container{max-width:1000px;margin:auto;padding:16px;}
+input,button{outline:none;}
+button{cursor:pointer;}
+.popup{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:50;display:none;}
+.popup .box{background:#e5e6e4;padding:16px 24px;border-radius:16px;text-align:center;}
